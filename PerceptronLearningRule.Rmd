@@ -1,0 +1,429 @@
+---
+title: "Perceptron Learning Rule and Visualization"
+author: "Juan Villasante Guerrero"
+date: "20 November 2019"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+---
+
+The algorithm is the following:
+
+
+ w, x, y are vectors
+
+initialize w = 0
+
+b parameter must also be included for the peceptron algorithm to deliver a valid separator.
+for incorrectly classified training samples b must be adjusted, too:
+
+while any training observation (x, y) is not classified correcty {
+  set w = w + learning_rate * yx
+  set b = b + learning_rate * yR^2
+   where R is some constant larger than the distance from the
+   origin to the furtherest training sample
+}
+
+# Perceptron Learning Rule
+
+x <- matriz de variables explicativas
+y <- vector de variable a explicar
+w <- número de parámetros, tantos como variables explicativas haya.
+R <- criterio de penalización, se obtiene como el máximo de las posibles normas eucladianas de cada fila de la matriz x.
+La normas eucladiana: (sqrt(x*x)) del vector depende la longitud de dicho vector. 
+
+En la función DistanceFromPlane Z es el X de la función Classify Linear.
+
+Se llama distancia from plane pero realmente es el valor de la función al multiplicar el valor de los parámetros por la x. Si el valor de la función es inferior a cero (le asignamos el valor -1) y si es valor superior a cero (le asignamos el valor 1).
+
+El bucle compara y(i): valor real frente al valor estimado yc(i)
+
+si en algun valor difiere, cambio el valor de los parámetros.
+Como se cambia el valor de los parámetros (metiendole una proporcion que depende de la tasa de crecimiento), si el valor estimado (yc[i]) es -1 el valor de y[i], el parámetro te resta en la proporción del valor de cada elemento en la ecuación.
+
+
+Función de Perceptron:
+
+Para definir esta función hay que definir previamente tres funciones:
+
+- DistanceFromPlane: te calcula el valor de la función, en un primer momento con el valor de los parametros inicializado
+- EuclideanNorm: te calcula norma euclidea del vector de x. Es la raiz cuadrada de la suma de los Xi elevados al cuadrado.
+- ClassifyLinear: Esta función realiza la predicción, clasifica a un individuo en 1 o -1 en función del valor de la función.
+
+En el descenso del gradiente el criterio para modificar el valor de los parametros, es el gradiente o la derivada de la función según el parámetro.
+
+## Coding the algorithm
+
+```{r}
+# Es la verdadera distancia de un punto a un plano?
+DistanceFromPlane = function(z, w, b) {
+  sum(z * w) + b
+}
+# Establece las predicciones segun en que lugar del plano este el punto
+ClassifyLinear = function(x, w, b) {
+  distances = apply(x, 1, DistanceFromPlane, w, b)
+  return(ifelse(distances < 0, -1, +1))
+}
+
+# Muestra la distancia de los puntos con respecto al origen
+EuclideanNorm <- function(x) {
+  return(sqrt(sum(x * x))) 
+}
+
+# PerceptronFunction <- function(x, y, learning.rate = 1) {
+#   w = vector(length = ncol(x)) # initialize w
+#   b = 0 # Initialize b
+#   iterations = 0 # count iterations
+#   R = max(apply(x, 1, EuclideanNorm)) # Dist max de un punto con respecto al origen
+#   convergence = FALSE # to enter the while loop
+#   while (!convergence) {
+#     convergence = TRUE # hopes luck
+#     yc <- ClassifyLinear(x, w, b)
+#     for (i in 1:nrow(x)) {
+#       if (y[i] != yc[i]) {
+#         convergence <- FALSE
+#         w <- w + learning.rate * y[i] * x[i,]
+#         b <- b + learning.rate * y[i] * R^2
+#         iterations <- iterations + 1
+#       }
+#     }
+#   }
+# s = EuclideanNorm(w)
+# return(list(w = w/s, b = b/s, steps = iterations))
+# }
+```
+Try other learning rates. Which one is the cost function? Explain the algorithm
+
+Generate data:
+
+```{r}
+# very easy
+# x2 = x1 + 1/2
+set.seed(2)
+x1 <- runif(50,-1,1)
+x2 <- runif(50,-1,1)
+x <- cbind(x1,x2)
+y <- ifelse(x2 > 0.5 + x1, +1, -1)
+# Criterio clasificador de los puntos al que nuestro algorimo
+# debe converger  (y = x + 0.5)
+
+xy <- cbind(x,y)
+
+plot(xy[,1], xy[,2], col = as.factor(xy[,3]), xlab = "Score-1", ylab = "Score-2")
+
+
+```
+
+
+```{r}
+PerceptronFunction <- function(x, y, learning_rate=1) {
+  w = vector(length = ncol(x)) # initialize w
+  b = 0 # Initialize b
+  iterations = 0 # count iterations
+  R = max(apply(x, 1, EuclideanNorm)) # Dist max de un punto con respecto al origen
+  convergence = FALSE # to enter the while loop
+  vector_iteraciones <- NULL
+  vector_errores <- NULL
+  equis2 <- NULL
+  be2 <- NULL
+  pasos <- NULL
+  while (!convergence & iterations <= 4500 ) {
+    convergence = TRUE # hopes luck
+    # en la primera iteracion al no existir plano con el que comparar la posicion
+    # la funcion DistanceFromPlane da como resultado 0 para todos los puntos
+    # y clasificando a todos los puntos con la funcion ClassifyLinear el valor 1
+    yc <- ClassifyLinear(x, w, b)
+    for (i in 1:nrow(x)) {
+      if (y[i] != yc[i]) {
+        convergence <- FALSE
+        w <- w + learning_rate * y[i] * x[i,]
+        b <- b + learning_rate * y[i] * R^2
+        iterations <- iterations + 1
+        vector_iteraciones <- c(vector_iteraciones,iterations)
+        vector_errores <- c(vector_errores,sum(abs(y - ClassifyLinear(x, w, b))/2))
+        if (iterations %in% seq(1,3500,20)){
+        #s <- EuclideanNorm(w)
+        equis <- -w[[1]]/w[[2]]
+        be <- -(b)/(w[[2]])
+        equis2 <- c(equis2, equis)
+        be2 <- c(be2, be)
+        pasos <- c(pasos, iterations)
+        #PlotData(x, y,equis = equis, be = be, iteration = iterations)
+        }
+      }
+    }
+  }
+  df <- data.frame(vector_iteraciones,vector_errores)
+  df2 <- data.frame(equis2,be2, pasos)
+s <- EuclideanNorm(w)
+return(list(w = w/s, b = b/s, steps = iterations, datos = df, rectas = df2))
+}
+```
+
+```{r}
+PerceptronFunction(x,y)
+```
+Test the perceptron
+
+```{r}
+library(ggplot2)
+df <- PerceptronFunction(x,y)$datos
+ggplot(df, aes(vector_iteraciones, vector_errores, color = vector_errores)) +
+  geom_point() +
+  xlab('Numero de iterciones') +
+  ylab('Puntos mal clasificados') +
+  theme_classic()
+```
+
+```{r}
+PerceptronPlot <- function(x, y, rectas)
+  for (i in 1:nrow(rectas))
+ {
+  plot(x, pch = ifelse(y > 0, "+", "-"), cex = 2, col = as.factor(y))
+  abline(a = rectas[i, 2], b = rectas[i, 1])
+  title(main = paste0('Iteracion ',rectas[i,3]))
+}
+```
+```{r}
+PerceptronPlot(x, y,  PerceptronFunction(x,y)$rectas)
+```
+
+
+```{r}
+datos <- iris
+```
+
+```{r}
+datos <- datos[, -c(1,2)]
+```
+```{r}
+datos$Species <- as.character(datos$Species)
+datos$Species[datos$Species == "versicolor" | datos$Species == "setosa"] <- -1
+datos$Species[datos$Species != -1 ] <- 1
+datos$Species <- as.double(datos$Species)
+```
+
+```{r}
+plot(datos[,1], datos[,2], col = as.factor(datos[,3]), xlab = "Score-1", ylab = "Score-2")
+```
+```{r}
+datos <- as.matrix(datos)
+```
+```{r}
+x <- datos[,1:2]
+y <- datos[,3]
+```
+
+```{r}
+PerceptronFunction(x, y)
+```
+
+```{r}
+PerceptronPlot(x, y,  PerceptronFunction(x,y)$rectas)
+```
+
+```{r}
+df <- PerceptronFunction(x,y)$datos
+ggplot(df, aes(vector_iteraciones, vector_errores, color = vector_errores)) +
+  geom_point() +
+  xlab('Numero de iterciones') +
+  ylab('Puntos mal clasificados') +
+  theme_classic()
+```
+```{r}
+# very easy
+# x2 = x1 + 1/2
+set.seed(2)
+x1 <- runif(50,-1,1)
+x2 <- runif(50,-1,1)
+x3 <- runif(50,-1,1)
+x <- cbind(x1,x2,x3)
+y <- ifelse(x2 > 0.5 + x1 + x3, +1, -1)
+
+
+xy <- cbind(x,y)
+
+
+library(rgl)
+
+plot3d(xy[,1],xy[,2],xy[,3])
+
+
+
+```
+ 
+# Planos en 3D 
+ 
+```{r}
+# very easy
+# x2 = x1 + 1/2
+set.seed(2)
+x1 <- runif(50,-1,1)
+x2 <- runif(50,-1,1)
+x3 <- runif(50,-1,1)
+x <- cbind(x1,x2,x3)
+y <- ifelse(x3 > 0.5 + x2 + x1, +1, -1)
+xy <- cbind(x, y)
+
+PerceptronFunction <- function(x, y, learning_rate=1) {
+  w = vector(length = ncol(x)) # initialize w
+  b = 0 # Initialize b
+  iterations = 0 # count iterations
+  R = max(apply(x, 1, EuclideanNorm)) # Dist max de un punto con respecto al origen
+  convergence = FALSE # to enter the while loop
+  x1 <- NULL
+  x2 <- NULL
+  x3 <- NULL
+  be2 <- NULL
+  pasos <- NULL
+  while (!convergence & iterations <= 4500 ) {
+    convergence = TRUE # hopes luck
+    # en la primera iteracion al no existir plano con el que comparar la posicion
+    # la funcion DistanceFromPlane da como resultado 0 para todos los puntos
+    # y clasificando a todos los puntos con la funcion ClassifyLinear el valor 1
+    yc <- ClassifyLinear(x, w, b)
+    for (i in 1:nrow(x)) {
+      if (y[i] != yc[i]) {
+        convergence <- FALSE
+        w <- w + learning_rate * y[i] * x[i,]
+        b <- b + learning_rate * y[i] * R^2
+        iterations <- iterations + 1
+        if (iterations %in% c(50,60,65,72,73,74,75)){
+          s <- EuclideanNorm(w)
+          x1 <- c(x1, w[[1]]/s)
+          x2 <- c(x2, w[[2]]/s)
+          x3 <- c(x3, w[[3]]/s)
+          be2 <- c(be2, b/s)
+          pasos <- c(pasos, iterations)
+        #PlotData(x, y,equis = equis, be = be, iteration = iterations)
+        }
+      }
+    }
+  }
+  df3 <- data.frame(x1,x2,x3,be2,pasos)
+s <- EuclideanNorm(w)
+return(list(w = w/s, b = b/s, steps = iterations, planos = df3))
+}
+```
+
+
+```{r}
+final_plano <- PerceptronFunction(x,y)$planos
+final_plano
+```
+
+```{r}
+View(Perceptron_plano_guay(x,y)$planos_guay)
+```
+
+### Plano 60
+```{r}
+  plot3d(xy[,1], xy[,2], xy[,3], col = ifelse(xy[, 4] == 1, "blue", "red"), main = final_plano[1,5])
+  planes3d(final_plano[2,1],
+           final_plano[2,2],
+           final_plano[2,3],
+           final_plano[2,4],
+           alpha = 0.5, col = 'chartreuse')
+```
+
+
+### Plano 65
+```{r}
+  plot3d(xy[,1], xy[,2], xy[,3], col = ifelse(xy[, 4] == 1, "blue", "red"), main = final_plano[1,5])
+  planes3d(final_plano[3,1],
+           final_plano[3,2],
+           final_plano[3,3],
+           final_plano[3,4],
+           alpha = 0.5, col = 'chartreuse')
+```
+### Plano 74
+```{r}
+  plot3d(xy[,1], xy[,2], xy[,3], col = ifelse(xy[, 4] == 1, "blue", "red"))
+  planes3d(final_plano[6,1],
+           final_plano[6,2],
+           final_plano[6,3],
+           final_plano[6,4],
+           alpha = 0.5, col = 'chartreuse')
+```
+
+
+### Plano Óptimo
+
+```{r}
+
+  plot3d(xy[,1], xy[,2], xy[,3], col = ifelse(xy[, 4] == 1, "blue", "red"))
+  planes3d(PerceptronFunction(x,y)$w[1],
+           PerceptronFunction(x,y)$w[2],
+           PerceptronFunction(x,y)$w[3],
+           PerceptronFunction(x,y)$b[1],
+           alpha = 0.5, col = 'chartreuse')
+```
+
+
+
+# Assignment
+
+1. Try other learning rates. Which one is the cost function? Explain the algorithm (help: http://www.dbs.ifi.lmu.de/Lehre/MaschLernen/SS2014/Skript/Perceptron2014.pdf)
+2. Try to plot the plane (or the line) every *z* iterations
+3. Try another example with new random data (please, do not use the iris data). Use a *complex* dataset looking for a non-completely linearly separated sample. 
+
+Use the RMarkdown format
+
+# References
+
+---
+references:
+- id: template
+  title: Binary classification
+  author:
+  - family: Fenner
+    given: Martin
+  container-title: Nature Materials
+  volume: 11
+  URL: 'http://dx.doi.org/10.1038/nmat3283'
+  DOI: 10.1038/nmat3283
+  issue: 4
+  publisher: Nature Publishing Group
+  page: 261-263
+  type: article-journal
+  issued:
+    year: 2012
+    month: 3
+    
+- id: perceptron
+  title: Perceptron
+  author:
+  - family: Wikipedia - Perceptron
+  URL: 'https://en.wikipedia.org/wiki/Perceptron'
+  issued:
+    year: 2017
+
+- id: rosenblatt
+  title: The Perceptron. A Probabilistic Model for Information Storage and Organization in the Brain
+  author:
+  - family: Rosenblatt
+  given: Frank
+  container-title: Psychological Review
+  volume: 65
+  issue: 6
+  publisher: American Psychological Association
+  page: 386–408
+  type: article-journal
+  issued:
+    year: 1958
+
+- id: murrell
+  title: Linear Classifiers and the Perceptron Algorithm
+  author:
+  - family: Murrell
+  given: Hugh
+  URL: 'http://www.cs.ukzn.ac.za/~hughm/dm/content/slides07.pdf'
+  issued:
+    year: 2017
+---
